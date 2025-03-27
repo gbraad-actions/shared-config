@@ -1,0 +1,28 @@
+name: "Shared Configuration"
+description: "Fetch configuration parameters from a shared .ini file and export as environment variables"
+author: "Gerard Braad <me@gbraad.nl>"
+inputs:
+  config_repo:
+    description: "URL of the repository containing the configuration file"
+    required: true
+  config_file:
+    description: "Path to the configuration file in the repository"
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Export configuration from configuration repository
+      run: |
+        git clone ${{ inputs.config_repo }} config-repo
+        cd config-repo
+        git config --global alias.configini 'config -f ${{ inputs.config_file }}'
+        while IFS= read -r line; do
+          if [[ $line =~ ^\[.*\]$ ]]; then
+            section=$(echo $line | sed 's/\[\(.*\)\]/\1/')
+          elif [[ $line =~ ^[^#]*=.*$ ]]; then
+            key=$(echo $line | cut -d '=' -f 1 | tr -d ' ')
+            value=$(echo $line | cut -d '=' -f 2 | tr -d ' ')
+            echo "$(echo ${section}_${key} | tr '[:lower:]' '[:upper:]')=$value" >> $GITHUB_ENV
+          fi
+        done < ${{ inputs.config_file }}
+      shell: bash
