@@ -26,8 +26,7 @@ runs:
               # If the value is quoted, extract content without quotes
               value="${BASH_REMATCH[1]}"
             else
-              # Otherwise use the previous method for unquoted values
-              value=$(echo $line | cut -d '=' -f 2- | sed 's/^ *//;s/ *$//')
+              value=$(echo -n "$line" | cut -d '=' -f 2- | sed 's/^ *//;s/ *$//' | tr -d '\n' | tr -d '\r')
             fi
             
             env_var=$(echo "${section}_${key}" | tr '[:lower:]' '[:upper:]')
