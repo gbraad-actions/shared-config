@@ -5,7 +5,7 @@ Fetch configuration parameters from a shared .ini file and export as environment
 
 ```yaml
       - name: Fetch shared configuration
-        uses: gbraad-action/shared-config@v1
+        uses: gbraad-actions/shared-config@v1
         with:
           config_repo: https://github.com/gbraad/shared-config.git
           config_file: fedora.ini
