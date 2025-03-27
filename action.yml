@@ -14,15 +14,24 @@ runs:
     - name: Export configuration from configuration repository
       run: |
         git clone ${{ inputs.config_repo }} config-repo
-        cd config-repo
-        git config --global alias.configini 'config -f ${{ inputs.config_file }}'
+        echo "Parsing configuration file: ${{ inputs.config_file }}"
+        section=""
         while IFS= read -r line; do
-          if [[ $line =~ ^\[.*\]$ ]]; then
-            section=$(echo $line | sed 's/\[\(.*\)\]/\1/')
+          if [[ $(echo "$line" | tr -d '\r') =~ ^\[.*\]$ ]]; then
+            section=$(echo "$line" | tr -d '\r' | sed -e 's/^\[\(.*\)\]$/\1/')
           elif [[ $line =~ ^[^#]*=.*$ ]]; then
-            key=$(echo $line | cut -d '=' -f 1 | tr -d ' ')
-            value=$(echo $line | cut -d '=' -f 2 | tr -d ' ')
-            echo "$(echo ${section}_${key} | tr '[:lower:]' '[:upper:]')=$value" >> $GITHUB_ENV
+            key=$(echo $line | cut -d '=' -f 1 | tr -d ' ' | tr -d '\t')
+            
+            if [[ $line =~ ^[^=]*=[[:space:]]*\"(.*)\"[[:space:]]*$ ]]; then
+              # If the value is quoted, extract content without quotes
+              value="${BASH_REMATCH[1]}"
+            else
+              # Otherwise use the previous method for unquoted values
+              value=$(echo $line | cut -d '=' -f 2- | sed 's/^ *//;s/ *$//')
+            fi
+            
+            env_var=$(echo "${section}_${key}" | tr '[:lower:]' '[:upper:]')
+            echo "$env_var=$value" >> $GITHUB_ENV
           fi
-        done < ${{ inputs.config_file }}
+        done < config-repo/${{ inputs.config_file }}
       shell: bash
