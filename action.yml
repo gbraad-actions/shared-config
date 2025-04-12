@@ -17,7 +17,8 @@ runs:
   steps:
     - name: Export configuration from configuration repository
       run: |
-        git clone ${{ inputs.config_repo }} config-repo
+        config_dir=$(mktemp -d config-repo-XXXXXX)
+        git clone ${{ inputs.config_repo }} ${config_dir}
         echo "Parsing configuration file: ${{ inputs.config_file }}"
         section=""
         while IFS= read -r line; do
@@ -40,5 +41,5 @@ runs:
               echo "$out_var=$value" >> $GITHUB_ENV
             fi
           fi
-        done < config-repo/${{ inputs.config_file }}
+        done < ${config_dir}/${{ inputs.config_file }}
       shell: bash
