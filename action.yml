@@ -8,6 +8,10 @@ inputs:
   config_file:
     description: "Path to the configuration file in the repository"
     required: true
+  use_output:
+    description: "Set outputs using GITHUB_OUTPUT instead of GITHUB_ENV"
+    required: false
+    default: false
 runs:
   using: 'composite'
   steps:
@@ -29,8 +33,12 @@ runs:
               value=$(echo -n "$line" | cut -d '=' -f 2- | sed 's/^ *//;s/ *$//' | tr -d '\n' | tr -d '\r')
             fi
             
-            env_var=$(echo "${section}_${key}" | tr '[:lower:]' '[:upper:]')
-            echo "$env_var=$value" >> $GITHUB_ENV
+            out_var=$(echo "${section}_${key}" | tr '[:lower:]' '[:upper:]')
+            if [[ "${{ inputs.use_output }}" == "true" ]]; then
+              echo "$out_var=$value" >> $GITHUB_OUTPUT
+            else
+              echo "$out_var=$value" >> $GITHUB_ENV
+            fi
           fi
         done < config-repo/${{ inputs.config_file }}
       shell: bash
