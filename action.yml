@@ -1,45 +1,18 @@
 name: "Shared Configuration"
-description: "Fetch configuration parameters from a shared .ini file and export as environment variables"
+description: "Fetch configuration parameters from a shared .ini file and export as environment variables or outputs"
 author: "Gerard Braad <me@gbraad.nl>"
 inputs:
   config_repo:
     description: "URL of the repository containing the configuration file"
     required: true
-  config_file:
-    description: "Path to the configuration file in the repository"
-    required: true
   use_output:
     description: "Set outputs using GITHUB_OUTPUT instead of GITHUB_ENV"
     required: false
-    default: false
+    default: "false"
+  config_file:
+    description: "Path to the INI configuration file (relative to the repository root)"
+    required: false
+    default: "config.ini"
 runs:
-  using: 'composite'
-  steps:
-    - name: Export configuration from configuration repository
-      run: |
-        config_dir=$(mktemp -d config-repo-XXXXXX)
-        git clone ${{ inputs.config_repo }} ${config_dir}
-        echo "Parsing configuration file: ${{ inputs.config_file }}"
-        section=""
-        while IFS= read -r line; do
-          if [[ $(echo "$line" | tr -d '\r') =~ ^\[.*\]$ ]]; then
-            section=$(echo "$line" | tr -d '\r' | sed -e 's/^\[\(.*\)\]$/\1/')
-          elif [[ $line =~ ^[^#]*=.*$ ]]; then
-            key=$(echo $line | cut -d '=' -f 1 | tr -d ' ' | tr -d '\t')
-            
-            if [[ $line =~ ^[^=]*=[[:space:]]*\"(.*)\"[[:space:]]*$ ]]; then
-              # If the value is quoted, extract content without quotes
-              value="${BASH_REMATCH[1]}"
-            else
-              value=$(echo -n "$line" | cut -d '=' -f 2- | sed 's/^ *//;s/ *$//' | tr -d '\n' | tr -d '\r')
-            fi
-            
-            out_var=$(echo "${section}_${key}" | tr '[:lower:]' '[:upper:]')
-            if [[ "${{ inputs.use_output }}" == "true" ]]; then
-              echo "$out_var=$value" >> $GITHUB_OUTPUT
-            else
-              echo "$out_var=$value" >> $GITHUB_ENV
-            fi
-          fi
-        done < ${config_dir}/${{ inputs.config_file }}
-      shell: bash
+  using: 'node20'
+  main: 'action.js'
