@@ -12,6 +12,15 @@ async function action() {
     const configRepo = core.getInput('config_repo');
     const configFile = core.getInput('config_file') || 'config.ini';
     
+    // Set default for force_uppercase based on the output mode
+    // Default is true for environment variables, false for outputs
+    const forceUppercaseInput = core.getInput('force_uppercase');
+    const forceUppercase = forceUppercaseInput !== '' 
+      ? forceUppercaseInput === 'true'
+      : !useOutput; // Default: true for env vars, false for outputs
+    
+    console.log(`Using force_uppercase: ${forceUppercase}`);
+    
     // Create a temporary directory for the config repository
     const configDir = tmp.dirSync({ prefix: 'config-repo-' }).name;
     console.log(`Created temporary directory: ${configDir}`);
@@ -41,10 +50,10 @@ async function action() {
     
     for (const section in parsedConfig) {
       const sectionData = parsedConfig[section];
-      const sectionPrefix = `${section.toUpperCase()}_`;
+      const sectionPrefix = forceUppercase ? `${section.toUpperCase()}_` : `${section}_`;
       
       for (const key in sectionData) {
-        const outputKey = `${sectionPrefix}${key.toUpperCase()}`;
+        const outputKey = forceUppercase ? `${sectionPrefix}${key.toUpperCase()}` : `${sectionPrefix}${key}`;
         const outputValue = sectionData[key];
         dynamicOutputs[outputKey] = outputValue;
       }

@@ -13,6 +13,9 @@ inputs:
     description: "Path to the INI configuration file (relative to the repository root)"
     required: false
     default: "config.ini"
+  force_uppercase:
+    description: "Force use of uppercase in variable names. Default is true for environment variables, false for outputs"
+    required: false
 runs:
   using: 'node20'
   main: 'action.js'
