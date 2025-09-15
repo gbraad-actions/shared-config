@@ -4,7 +4,8 @@ author: "Gerard Braad <me@gbraad.nl>"
 inputs:
   config_repo:
     description: "URL of the repository containing the configuration file"
-    required: true
+    required: false
+    default: ""
   use_output:
     description: "Set outputs using GITHUB_OUTPUT instead of GITHUB_ENV"
     required: false

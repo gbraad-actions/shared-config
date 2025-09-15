@@ -27,13 +27,22 @@ async function action() {
     
     console.log(`Using force_uppercase: ${forceUppercase}`);
     
-    // Create a temporary directory for the config repository
-    const configDir = tmp.dirSync({ prefix: 'config-repo-' }).name;
-    console.log(`Created temporary directory: ${configDir}`);
-    
-    // Clone the config repository
-    console.log(`Cloning config repository: ${configRepo}`);
-    await exec.exec('git', ['clone', configRepo, configDir]);
+    // Use configuration repository only when given
+    let configDir;
+    if (configRepo && configRepo.trim().length > 0) {
+      // Create a temporary directory for the config repository
+      configDir = tmp.dirSync({ prefix: 'config-repo-' }).name;
+      console.log(`Created temporary directory: ${configDir}`);
+      
+      // Clone the config repository
+      console.log(`Cloning config repository: ${configRepo}`);
+      await exec.exec('git', ['clone', configRepo, configDir]);
+    // ... otherwise use the current folder to look for the config_file
+    } else {
+      // Use current workspace directory
+      configDir = process.cwd();
+      console.log(`Using current workspace directory: ${configDir}`);
+    }
     
     // Determine the full path to the config file
     const fullConfigPath = path.join(configDir, configFile);
@@ -89,10 +98,6 @@ async function action() {
       }
     }
     
-    // Clean up the temporary directory
-    fs.removeSync(configDir);
-    console.log(`Removed temporary directory: ${configDir}`);
-
   } catch (error) {
     core.setFailed(`Action failed with error: ${error.message}`);
   }
