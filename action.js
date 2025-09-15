@@ -5,6 +5,12 @@ const path = require('path');
 const ini = require('ini');
 const tmp = require('tmp');
 
+function extractIniFromMarkdown(mdContent) {
+  const configRegex = /### config[\s\S]*?```ini([\s\S]*?)```/m;
+  const match = mdContent.match(configRegex);
+  return match ? match[1].trim() : null;
+}
+
 async function action() {
   try {
     // Get the inputs
@@ -38,27 +44,36 @@ async function action() {
       core.setFailed(`Config file not found: ${fullConfigPath}`);
       return;
     }
-    
-    // Read and parse the INI file
-    const configContent = fs.readFileSync(fullConfigPath, 'utf8');
-    const parsedConfig = ini.parse(configContent);
-    
+
+    // Decide how to extract configuration
+    let configContent = fs.readFileSync(fullConfigPath, 'utf8');
+    let iniContent;
+
+    if (configFile.endsWith('.md')) {
+      iniContent = extractIniFromMarkdown(configContent);
+      if (!iniContent) {
+        core.setFailed(`No INI block found in Markdown config file: ${fullConfigPath}`);
+        return;
+      }
+    } else {
+      iniContent = configContent;
+    }
+
+    // Parse the INI content
+    const parsedConfig = ini.parse(iniContent);
     console.log('Parsed configuration:', JSON.stringify(parsedConfig, null, 2));
     
     // Process each section and key in the INI file
     const dynamicOutputs = {};
-    
     for (const section in parsedConfig) {
       const sectionData = parsedConfig[section];
       const sectionPrefix = forceUppercase ? `${section.toUpperCase()}_` : `${section}_`;
-      
       for (const key in sectionData) {
         const outputKey = forceUppercase ? `${sectionPrefix}${key.toUpperCase()}` : `${sectionPrefix}${key}`;
         const outputValue = sectionData[key];
         dynamicOutputs[outputKey] = outputValue;
       }
     }
-    
     console.log('Generated outputs:', dynamicOutputs);
     
     // Set outputs or env variables based on user preference
